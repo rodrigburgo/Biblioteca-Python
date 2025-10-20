@@ -1,0 +1,76 @@
+import h2o
+from h2o.frame import H2OFrame 
+
+# =====================================================
+# 1️⃣ DISTRIBUCIÓN DE POISSON – Llegada de clientes
+# =====================================================
+# Enunciado (basado en tu PDF):
+# El número promedio (λ) de clientes que llegan por hora es 5.
+# Calcular:
+# a) P(X = 3)
+# b) P(X <= 3)
+# c) P(X > 4)
+# Y graficar la función de probabilidad P(X=k).
+
+lam = 5  # media (λ)
+x_vals = np.arange(0, 15)
+p_vals = [poisson.pmf(k, lam) for k in x_vals]
+
+# Cálculos solicitados
+P_x3 = poisson.pmf(3, lam)
+P_leq3 = poisson.cdf(3, lam)
+P_g4 = 1 - poisson.cdf(4, lam)
+
+print("=== Distribución de Poisson ===")
+print(f"λ = {lam}")
+print(f"P(X = 3) = {P_x3:.4f}")
+print(f"P(X ≤ 3) = {P_leq3:.4f}")
+print(f"P(X > 4) = {P_g4:.4f}")
+
+# Gráfica PMF
+plt.figure(figsize=(7,4))
+plt.bar(x_vals, p_vals, color='skyblue', edgecolor='k')
+plt.title(f"Distribución de Poisson (λ = {lam})")
+plt.xlabel('Número de clientes (X)')
+plt.ylabel('P(X=k)')
+plt.grid(alpha=0.3)
+plt.show()
+
+# =====================================================
+# 2️⃣ DISTRIBUCIÓN NORMAL – Peso de botellas
+# =====================================================
+# Enunciado (basado en tu PDF):
+# El peso de las botellas sigue una distribución normal con:
+# media μ = 500 g y desviación estándar σ = 20 g.
+# Calcular:
+# a) P(X < 490)
+# b) P(480 < X < 520)
+# c) P(X > 530)
+# Y graficar la curva normal.
+
+mu = 500
+sigma = 20
+x = np.linspace(440, 560, 200)
+y = norm.pdf(x, mu, sigma)
+
+# Cálculos de probabilidades
+P_x_lt_490 = norm.cdf(490, mu, sigma)
+P_480_520 = norm.cdf(520, mu, sigma) - norm.cdf(480, mu, sigma)
+P_x_gt_530 = 1 - norm.cdf(530, mu, sigma)
+
+print("\n=== Distribución Normal ===")
+print(f"Media μ = {mu}, Desviación estándar σ = {sigma}")
+print(f"P(X < 490) = {P_x_lt_490:.4f}")
+print(f"P(480 < X < 520) = {P_480_520:.4f}")
+print(f"P(X > 530) = {P_x_gt_530:.4f}")
+
+# Gráfica de la densidad normal
+plt.figure(figsize=(8,4))
+plt.plot(x, y, color='tomato', linewidth=2, label='f(x)')
+plt.fill_between(x, y, alpha=0.2)
+plt.title(f"Distribución Normal (μ={mu}, σ={sigma})")
+plt.xlabel('Peso de botella (g)')
+plt.ylabel('Densidad de probabilidad')
+plt.grid(alpha=0.3)
+plt.legend()
+plt.show()
