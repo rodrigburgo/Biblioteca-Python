@@ -1,0 +1,203 @@
+# soluciones_probabilidad_ejercicios.py
+# pip install h2o
+
+import h2o
+from h2o.frame import H2OFrame
+import random
+
+# ------------------------------
+# EJERCICIO 1
+# Selección aleatoria de 3 estudiantes de un salón con:
+# E = 8 (Electrónica), S = 3 (Sistemas), I = 9 (Industrial)  -> N = 20
+# Determinar la probabilidad de:
+#  a) Los 3 estudiantes sean de Electrónica
+#  b) Los 3 sean de Sistemas
+#  c) 2 de Electrónica y 1 de Sistemas
+#  d) Al menos 1 sea de Sistemas
+#  e) Se escoja 1 de cada carrera
+#  f) Se seleccionen en el orden: Electrónica, Sistemas, Industrial
+# Realizar BOTH: Sin reemplazo (combinatoria) y Con reemplazo (independiente)
+# ------------------------------
+
+E = 8
+S = 3
+I = 9
+N = E + S + I  # 20
+
+def ejercicio1():
+    resultados = []
+
+    # --- SIN reemplazo (combinatoria) ---
+    denom_sin = comb(N, 3)  # # formas de elegir 3 sin orden
+    p_3E_sin = comb(E, 3) / denom_sin if E >= 3 else 0.0
+    p_3S_sin = comb(S, 3) / denom_sin if S >= 3 else 0.0
+    p_2E_1S_sin = (comb(E, 2) * comb(S, 1)) / denom_sin
+    # Al menos 1 de Sistemas = 1 - prob(ninguno de S) = 1 - C(N-S,3)/C(N,3)
+    p_al_menos_1S_sin = 1 - comb(N - S, 3) / denom_sin
+    p_1cada_sin = (comb(E,1) * comb(S,1) * comb(I,1)) / denom_sin
+    # Selección en orden E, S, I (sin reemplazo): P = (E/N) * (S/(N-1)) * (I/(N-2))
+    p_orden_ESI_sin = (E / N) * (S / (N - 1)) * (I / (N - 2))
+
+    resultados.append(("SIN reemplazo", {
+        "Los 3 sean Electrónica": p_3E_sin,
+        "Los 3 sean Sistemas": p_3S_sin,
+        "2 Electrónica y 1 Sistemas": p_2E_1S_sin,
+        "Al menos 1 Sistemas": p_al_menos_1S_sin,
+        "1 de cada carrera": p_1cada_sin,
+        "En orden E,S,I": p_orden_ESI_sin
+    }))
+
+    # --- CON reemplazo (cada extracción independiente, probabilidades fijas) ---
+    pE = E / N
+    pS = S / N
+    pI = I / N
+
+    p_3E_con = pE ** 3
+    p_3S_con = pS ** 3
+    # 2E + 1S en cualquier orden: combinatoria multinomial C(3,2)*(pE^2)*(pS)
+    p_2E_1S_con = comb(3,2) * (pE ** 2) * pS
+    p_al_menos_1S_con = 1 - (1 - pS) ** 3
+    # 1 de cada en cualquier orden: 3! * pE * pS * pI
+    p_1cada_con = math.factorial(3) * pE * pS * pI
+    p_orden_ESI_con = pE * pS * pI  # orden específico
+
+    resultados.append(("CON reemplazo", {
+        "Los 3 sean Electrónica": p_3E_con,
+        "Los 3 sean Sistemas": p_3S_con,
+        "2 Electrónica y 1 Sistemas": p_2E_1S_con,
+        "Al menos 1 Sistemas": p_al_menos_1S_con,
+        "1 de cada carrera": p_1cada_con,
+        "En orden E,S,I": p_orden_ESI_con
+    }))
+    return resultados
+
+res1 = ejercicio1()
+
+# Mostrar resultados del ejercicio 1 en tabla
+rows = []
+for tipo, dic in res1:
+    for evento, p in dic.items():
+        rows.append({"Tipo": tipo, "Evento": evento, "Probabilidad": p})
+df1 = pd.DataFrame(rows)
+print("\n=== EJERCICIO 1: Selección de estudiantes (E=8, S=3, I=9) ===")
+print(df1.to_string(index=False, formatters={"Probabilidad": "{:.6f}".format}))
+
+# ------------------------------
+# EJERCICIO 2
+# 4 libros diferentes de Ingeniería, 6 libros diferentes de Inglés y 2 libros diferentes de Física (total 12).
+# a) Los libros de cada asignatura deben estar todos juntos (3 bloques)
+# b) Solamente los libros de Ingeniería deben estar juntos
+# ------------------------------
+def ejercicio2():
+    n_ing = 4
+    n_ingl = 6
+    n_fis = 2
+    total = n_ing + n_ingl + n_fis  # 12
+
+    # a) Consideramos 3 bloques (Ingeniería, Inglés, Física). Se permutan los 3 bloques: 3!
+    # Dentro de cada bloque los libros son distintos: n_ing!, n_ingl!, n_fis!
+    formas_a = math.factorial(3) * math.factorial(n_ing) * math.factorial(n_ingl) * math.factorial(n_fis)
+
+    # b) Sólo Ingeniería junta: consideramos el bloque Ingeniería + los otros 8 libros sueltos => 9 ítems en total
+    # Permutaciones de esos 9 ítems: 9! ; dentro del bloque Ingeniería: 4!
+    formas_b = math.factorial(total - n_ing + 1) * math.factorial(n_ing)  # = 9! * 4!
+
+    return formas_a, formas_b
+
+formas2_a, formas2_b = ejercicio2()
+print("\n=== EJERCICIO 2: Ordenamiento de libros ===")
+print(f"a) Cada asignatura junta (3 bloques): {formas2_a:,d} formas")
+print(f"b) Sólo Ingeniería junta: {formas2_b:,d} formas")
+
+# ------------------------------
+# EJERCICIO 3
+# De un total de 5 Ingenieros y 7 Abogados se forma un comité de 2 Ingenieros y 3 Abogados.
+# a) ¿De cuántas formas si puede pertenecer cualquiera?
+# b) Un abogado determinado debe pertenecer al comité.
+# c) Dos ingenieros determinados NO pueden pertenecer al comité (interpreto que esos dos están excluidos).
+# ------------------------------
+def ejercicio3():
+    ingenieros = 5
+    abogados = 7
+
+    # a) cualquier ingeniero y cualquier abogado
+    formas_a = comb(ingenieros, 2) * comb(abogados, 3)
+
+    # b) abogado determinado debe pertenecer: fijamos ese abogado y elegimos los otros 2 abogados entre los 6 restantes
+    formas_b = comb(ingenieros, 2) * comb(abogados - 1, 2)
+
+    # c) dos ingenieros determinados no pueden pertenecer -> los excluimos: ingenieros disponibles = 5 - 2 = 3
+    formas_c = comb(ingenieros - 2, 2) * comb(abogados, 3)
+
+    return formas_a, formas_b, formas_c
+
+f3a, f3b, f3c = ejercicio3()
+print("\n=== EJERCICIO 3: Comités ===")
+print(f"a) Cualquier ingeniero/abogado: {f3a:,d} formas")
+print(f"b) Abogado determinado dentro: {f3b:,d} formas")
+print(f"c) 2 ingenieros determinados NO pueden pertenecer: {f3c:,d} formas (asumiendo exclusión)")
+
+# ------------------------------
+# EJERCICIO 4
+# Se ordenan en fila 5 estudiantes de Electrónica, 2 de Sistemas y 3 de Industrial.
+# ¿De cuántas formas es posible ordenarlos si los estudiantes de la misma carrera no se distinguen entre sí?
+# Es decir permutaciones con repetición: N! / (n1! n2! n3!)
+# ------------------------------
+def ejercicio4():
+    nE = 5
+    nS = 2
+    nI = 3
+    total = nE + nS + nI  # 10
+    formas = math.factorial(total) // (math.factorial(nE) * math.factorial(nS) * math.factorial(nI))
+    return formas
+
+formas4 = ejercicio4()
+print("\n=== EJERCICIO 4: Orden en fila (identical dentro de cada carrera) ===")
+print(f"Formas posibles: {formas4:,d}")
+
+# ------------------------------
+# EJERCICIO 5
+# a) No obtener un total de 7 u 11 en ninguno de los 2 lanzamientos de un par de dados no alterados.
+#    (Cada 'lanzamiento' acá es la suma de dos dados; hay 36 combinaciones por lanzamiento.)
+# b) Obtener tres veces el número 6, en 5 lanzamientos de un dado no alterado.
+# Además graficar la PMF binomial para (b).
+# ------------------------------
+def ejercicio5():
+    # a) Probabilidad de obtener suma 7 o 11 en un lanzamiento de par de dados
+    # Conteos: suma 7 -> 6 combinaciones, suma 11 -> 2 combinaciones => total 8/36
+    p_7 = 6/36
+    p_11 = 2/36
+    p_7o11 = (6 + 2) / 36
+    # Probabilidad de NO obtener 7 ni 11 en un lanzamiento = 1 - p_7o11
+    p_no_7ni11 = 1 - p_7o11
+    # En dos lanzamientos independientes: (1 - p_7o11)^2
+    p_no_7ni11_en_2 = p_no_7ni11 ** 2
+
+    # b) Binomial: n=5, p=1/6 (prob de sacar 6 en un lanzamiento)
+    n = 5
+    p6 = 1/6
+    k = 3
+    p_exact_3_6 = comb(n, k) * (p6**k) * ((1 - p6)**(n - k))
+
+    return p_no_7ni11_en_2, p_exact_3_6, (n, p6)
+
+p5a, p5b, bin_params = ejercicio5()
+print("\n=== EJERCICIO 5: Dados y binomial ===")
+print(f"a) Probabilidad de NO obtener suma 7 ni 11 en ninguno de los 2 lanzamientos (par de dados): {p5a:.6f}")
+print(f"b) Probabilidad de obtener exactamente tres veces el número 6 en 5 lanzamientos: {p5b:.6f}")
+
+# Graficar PMF binomial para n=5, p=1/6
+n, p6 = bin_params
+xs = np.arange(0, n+1)
+pmf = [comb(n, k) * (p6**k) * ((1-p6)**(n-k)) for k in xs]
+
+plt.figure(figsize=(7,4))
+plt.bar(xs, pmf)
+plt.xticks(xs)
+plt.xlabel('Veces que sale 6 en 5 lanzamientos')
+plt.ylabel('P(X=k)')
+plt.title(f'PMF Binomial n={n}, p={p6:.3f}')
+for i, v in enumerate(pmf):
+    plt.text(i, v + 0.002, f"{v:.4f}", ha='center')
+plt.tight_layout()
+plt.show()
