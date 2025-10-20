@@ -1,0 +1,94 @@
+import h2o
+from h2o.frame import H2OFrame 
+
+# =========================================================
+# CASO 1: DISTRIBUCIÓN CONJUNTA DISCRETA
+# =========================================================
+# Contexto inventado:
+# X = número de máquinas en uso en una fábrica (0,1,2)
+# Y = número de máquinas en mantenimiento (0,1)
+# Tabla conjunta P(X=x, Y=y)
+
+tabla = pd.DataFrame({
+    0: [0.10, 0.20, 0.15],   # Prob(Y=0)
+    1: [0.05, 0.25, 0.25]    # Prob(Y=1)
+}, index=[0,1,2])
+tabla.index.name = 'X'
+tabla.columns.name = 'Y'
+
+print("=== DISTRIBUCIÓN CONJUNTA DISCRETA ===")
+print(tabla)
+
+# Verificar que sume 1
+print("\nSuma total de probabilidades =", tabla.values.sum())
+
+# ------------------------------
+# Distribuciones marginales
+pX = tabla.sum(axis=1)
+pY = tabla.sum(axis=0)
+print("\nMarginal P(X):\n", pX)
+print("\nMarginal P(Y):\n", pY)
+
+# ------------------------------
+# Probabilidades condicionales
+# P(X=2 | Y=1) = P(X=2, Y=1)/P(Y=1)
+P_X2_Y1 = tabla.loc[2,1] / pY[1]
+print(f"\nP(X=2 | Y=1) = {P_X2_Y1:.3f}")
+
+# Valor esperado de X e Y
+E_X = sum(x*pX[x] for x in pX.index)
+E_Y = sum(y*pY[y] for y in pY.index)
+print(f"E[X] = {E_X:.3f},   E[Y] = {E_Y:.3f}")
+
+# =========================================================
+# CASO 2: DISTRIBUCIÓN CONJUNTA CONTINUA
+# =========================================================
+# Contexto inventado:
+# X = tiempo (en horas) que tarda un servidor en atender un pedido
+# Y = tiempo (en horas) que tarda en enviar el pedido.
+# f(x,y) = k*(x + y)  ,  0 ≤ x ≤ 1, 0 ≤ y ≤ 1
+
+x, y, k = sp.symbols('x y k', positive=True)
+f_xy = k * (x + y)
+
+# ------------------------------
+# Hallar k para que la función esté normalizada
+int_total = sp.integrate(sp.integrate(f_xy, (x, 0, 1)), (y, 0, 1))
+k_val = sp.solve(sp.Eq(int_total, 1), k)[0]
+print(f"\nConstante de normalización k = {k_val}")
+
+f_xy = f_xy.subs(k, k_val)
+print(f"f(x,y) = {sp.simplify(f_xy)}")
+
+# ------------------------------
+# Probabilidad P(X < 0.5, Y < 0.5)
+P_xy = sp.integrate(sp.integrate(f_xy, (x, 0, 0.5)), (y, 0, 0.5))
+print(f"\nP(X<0.5, Y<0.5) = {P_xy.evalf()}")
+
+# ------------------------------
+# Distribuciones marginales
+fX = sp.integrate(f_xy, (y, 0, 1))
+fY = sp.integrate(f_xy, (x, 0, 1))
+print(f"\nfX(x) = {sp.simplify(fX)}")
+print(f"fY(y) = {sp.simplify(fY)}")
+
+# ------------------------------
+# Valor esperado E[X] y E[Y]
+E_X = sp.integrate(sp.integrate(x*f_xy, (x, 0, 1)), (y, 0, 1))
+E_Y = sp.integrate(sp.integrate(y*f_xy, (x, 0, 1)), (y, 0, 1))
+print(f"\nE[X] = {E_X.evalf()} ,  E[Y] = {E_Y.evalf()}")
+
+# ------------------------------
+# Gráfica 3D de f(x,y)
+f_lamb = sp.lambdify((x, y), f_xy, 'numpy')
+X, Y = np.meshgrid(np.linspace(0,1,50), np.linspace(0,1,50))
+Z = f_lamb(X, Y)
+
+fig = plt.figure(figsize=(8,5))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.9)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('f(x,y)')
+ax.set_title('Distribución conjunta continua f(x,y) = 3(x+y)/2')
+plt.show()
