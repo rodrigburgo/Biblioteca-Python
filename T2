@@ -1,0 +1,76 @@
+import h2o
+from h2o.frame import H2OFrame 
+
+# 1) Definimos variable simbólica
+x = sp.Symbol('x', real=True, nonnegative=True)
+K = sp.Symbol('K', real=True, positive=True)
+
+# Definimos la función de densidad
+f = K * x**2
+
+# -----------------------------
+# Hallar K usando condición de normalización
+# ∫_0^6 Kx^2 dx = 1
+int_normal = sp.integrate(f, (x, 0, 6))
+K_val = sp.solve(sp.Eq(int_normal, 1), K)[0]
+print(f"Constante de normalización K = {K_val}")
+
+# Sustituimos K en f(x)
+f_x = f.subs(K, K_val)
+print(f"\nFunción de densidad: f(x) = {sp.simplify(f_x)} para 0 ≤ x ≤ 6")
+
+# -----------------------------
+# Función acumulativa F(x)
+# F(x) = ∫ f(u) du desde 0 hasta x
+F_x = sp.integrate(f_x, (x, 0, x))
+F_x = sp.simplify(F_x)
+print(f"\nFunción acumulativa (0 ≤ x ≤ 6): F(x) = {F_x}")
+
+# Definimos F(x) por tramos
+F_piecewise = sp.Piecewise(
+    (0, x <= 0),
+    (F_x, (x > 0) & (x < 6)),
+    (1, x >= 6)
+)
+
+# -----------------------------
+#  Calcular P(1 < X < 2)
+P_1_2 = sp.integrate(f_x, (x, 1, 2))
+print(f"\nP(1 < X < 2) = {P_1_2.evalf()} = {sp.nsimplify(P_1_2)}")
+
+# También usando F(x): F(2) - F(1)
+P_1_2_F = F_x.subs(x, 2) - F_x.subs(x, 1)
+print(f"Comprobación usando F(x): {P_1_2_F.evalf()}")
+
+# -----------------------------
+# 2) Calcular valor esperado E[X] y varianza Var(X)
+E_X = sp.integrate(x * f_x, (x, 0, 6))
+E_X2 = sp.integrate(x**2 * f_x, (x, 0, 6))
+Var_X = sp.simplify(E_X2 - E_X**2)
+
+print(f"\nValor esperado E[X] = {E_X.evalf()}")
+print(f"Varianza Var(X) = {Var_X.evalf()}")
+
+# -----------------------------
+# 5️⃣ Graficar f(x) y F(x)
+f_num = sp.lambdify(x, f_x, 'numpy')
+F_num = sp.lambdify(x, F_x, 'numpy')
+
+xs = np.linspace(0, 6, 300)
+plt.figure(figsize=(10,4))
+plt.subplot(1,2,1)
+plt.plot(xs, f_num(xs), color='royalblue', label='f(x)')
+plt.fill_between(xs, f_num(xs), alpha=0.2)
+plt.title('Función de densidad f(x)')
+plt.xlabel('x')
+plt.ylabel('f(x)')
+plt.legend()
+
+plt.subplot(1,2,2)
+plt.plot(xs, F_num(xs), color='tomato', label='F(x)')
+plt.title('Función acumulativa F(x)')
+plt.xlabel('x')
+plt.ylabel('F(x)')
+plt.legend()
+plt.tight_layout()
+plt.show()
