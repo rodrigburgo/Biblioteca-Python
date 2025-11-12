@@ -1,0 +1,30 @@
+# Ejemplo: Regresión lineal simple y coeficiente de Pearson
+
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy import stats
+
+# Datos
+x = np.array([1,2,3,4])
+y = np.array([2,3,5,4])
+
+# 1) Coeficiente de correlación (Pearson)
+r, p_value = stats.pearsonr(x, y)
+print("Pearson r:", r, "p-value:", p_value)
+
+# 2) Regresión con statsmodels (OLS)
+X = sm.add_constant(x)  # agrega intercepto (columna de 1s)
+model = sm.OLS(y, X).fit()
+print(model.summary())
+
+# 3) Predicciones
+x_new = np.array([1,2,3,4])
+X_new = sm.add_constant(x_new)
+y_hat = model.predict(X_new)
+print("Predicciones ŷ:", y_hat)
+
+# 4) Comparación manual: mostrar coeficientes (intercepto y pendiente)
+b0 = model.params[0]  # intercepto
+b1 = model.params[1]  # pendiente
+print("Intercepto b0:", b0, "Pendiente b1:", b1)
